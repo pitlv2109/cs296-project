@@ -3,66 +3,63 @@
             [ring.middleware.reload :refer [wrap-reload]]
             [compojure.core :refer [defroutes GET]]
             [compojure.route :refer [not-found]]
-            [ring.handler.dump :refer [handle-dump]]))
+            [ring.handler.dump :refer [handle-dump]]
+            [monger.core :as mg]
+            [monger.collection :as mc]
+            [ring.util.response :refer [redirect]]))
 
+;; Front page
 (defn welcome
-  "A ring handler to respond with a simple welcome message"
   [request]
   {:status 200
-     :body "<h1>Hello, Clojure World</h1>  
-     <p>Welcome to your first Clojure app, I now update automatically</p>
-     <p>I now use defroutes to manage incoming requests</p>"
+     :body "<h1>CS 296-25 Final Project: URL Shortener</h1>  
+     <p>Append the URL you want to shorten (without the https://www. part) like the format below</p>
+     <p>https://cs296-url-shortener.herokuapp.com/shorten/website_to_be_shortened</p>
+     <p>For example, https://cs296-url-shortener.herokuapp.com/shorten/google.com"
    :headers {}})
 
-(defn goodbye
-  "A song to wish you goodbye"
+;; Shorten a requested URL
+(defn shorten
   [request]
-  {:status 200
-   :body "<h1>Walking back to happiness</h1>
-          <p>Walking back to happiness with you</p>
-          <p>Said, Farewell to loneliness I knew</p>
-          <p>Laid aside foolish pride</p>
-          <p>Learnt the truth from tears I cried</p>"
-   :headers {}})
+  (let [url (get-in request [:route-params :url])]
 
-(defn about
-  "Information about the website developer"
-  [request]
-  {:status 200
-   :body "I am an awesome Clojure developer, well getting there..."
-   :headers {}})
+     (def random (rand-int 999999))
+     ;; Insert new url
+     (let [uri "mongodb://cs296:123456789@ds157247.mlab.com:57247/cs296-url-shortener"
+      {:keys [conn db]} (mg/connect-via-uri uri)]
+        (mc/insert-and-return db "urls" {:original (clojure.string/join ["http://www." url]) :shortened (str random)}))
 
-(defn request-info
-  "View the information contained in the request, useful for debugging"
-  [request]
-  {:status 200
-   :body (pr-str request)
-   :headers {}})
-
-(defn hello
-  "A simple personalised greeting showing the use of variable path elements"
-  [request]
-  (let [name (get-in request [:route-params :name])]
     {:status 200
-     :body (str "Hello " name ".  I got your name from the web URL")
+     :body (str "You can now access www." url " via https://cs296-url-shortener.herokuapp.com/" random)
      :headers {}}))
 
+;; Redirect to a website via shortened URL 
+(defn redirectx
+  [request]
+  (let [url (get-in request [:route-params :url])]
+    (let [uri "mongodb://cs296:123456789@ds157247.mlab.com:57247/cs296-url-shortener"
+      {:keys [conn db]} (mg/connect-via-uri uri)]
+        (def obj (mc/find-one-as-map db "urls" {:shortened url}))
+        (def original (get obj :original))
+        
+        (redirect original)
+         )))
+
+;; Every request goes here first
 (defroutes app
   (GET "/" [] welcome)
-  (GET "/goodbye" [] goodbye)
-  (GET "/about" [] about)
-  (GET "/request-info" [] request-info)
-  (GET "/hello/:name" [] hello)
-  (not-found "<h1>This is not the page you are looking for</h1> <p>Sorry, the page you requested was not found!</p>"))
+  (GET "/shorten/:url" [] shorten)
+  (GET "/:url" [] redirectx)
+  (not-found "<h1>You're not supposed to be here</h1>"))
 
+;; Main function
 (defn -main
-  "A very simple web server using Ring & Jetty"
   [port-number]
   (jetty/run-jetty app
      {:port (Integer. port-number)}))
 
+;; Reloads code changes via the development profile of Leiningen
 (defn -dev-main
-  "A very simple web server using Ring & Jetty that reloads code changes via the development profile of Leiningen"
   [port-number]
   (jetty/run-jetty (wrap-reload #'app)
      {:port (Integer. port-number)}))
