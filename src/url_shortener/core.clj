@@ -33,7 +33,7 @@
      :body (str "You can now access www." url " via https://cs296-url-shortener.herokuapp.com/" random)
      :headers {}}))
 
-;; Redirect to a website via shortened URL 
+;; Redirect to a website via the shortened URL 
 (defn redirectx
   [request]
   (let [url (get-in request [:route-params :url])]
@@ -42,7 +42,9 @@
         (def obj (mc/find-one-as-map db "urls" {:shortened url}))
         (def original (get obj :original))
         
-        (redirect original)
+        (if (nil? original) {
+          :status 404
+          :body "404! Please check your URL"} (redirect original))
          )))
 
 ;; Every request goes here first
@@ -50,7 +52,7 @@
   (GET "/" [] welcome)
   (GET "/shorten/:url" [] shorten)
   (GET "/:url" [] redirectx)
-  (not-found "<h1>You're not supposed to be here</h1>"))
+  (not-found "<h3>404! Please check your URL</h3>"))
 
 ;; Main function
 (defn -main
