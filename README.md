@@ -1,14 +1,11 @@
-# url-shortener
+# Website: 
 
-A Clojure library designed to ... well, that part is up to you.
+https://cs296-url-shortener.herokuapp.com
 
-## Usage
+# How-to-use
 
-FIXME
+Append /shorten/the URL you want to shorten (without the https://www. part) as the format below
 
-## License
+https://cs296-url-shortener.herokuapp.com/shorten/website_to_be_shortened
 
-Copyright © 2016 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+For example, https://cs296-url-shortener.herokuapp.com/shorten/google.com
