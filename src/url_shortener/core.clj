@@ -27,6 +27,8 @@
      ;; Insert new url
      (let [uri "mongodb://cs296:123456789@ds157247.mlab.com:57247/cs296-url-shortener"
       {:keys [conn db]} (mg/connect-via-uri uri)]
+        ;; Handle collision
+        (def random (+ (* random 10) (mc/count db "urls" {:shortened random})))
         (mc/insert-and-return db "urls" {:original (clojure.string/join ["http://www." url]) :shortened (str random)}))
 
     {:status 200
